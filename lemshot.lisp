@@ -46,16 +46,25 @@
           (t
            (funcall finalizer)))))
 
+(defun gameover ()
+  (message "GEME OVER"))
+
 ;;; player
 (defclass player (sprite) ())
 
 (defmethod draw ((player player) point)
   (insert-string point *player-text* :attribute 'player-attribute))
 
+(defmethod update ((player player))
+  (dolist (enemy (get-sprites 'enemy))
+    (when (collide-p player enemy)
+      (delete-sprite player)
+      (gameover))))
+
 (defun create-player-sprite ()
   (when (and (boundp '*player*)
              (alive-sprite-p *player*))
-    (delete-sprite *player*))
+    (editor-error "alreay exist player"))
   (let ((x (floor (display-width) 2))
         (y (floor (display-height) 2)))
     (multiple-value-bind (w h) (compute-size-with-ascii-art *player-text*)
@@ -127,21 +136,25 @@
                          (sprite-width player))
                       (+ (sprite-y player) 1)))
 
+(defun operate-player (fn)
+  (funcall fn *player*)
+  (update *player*))
+
 ;;;
 (define-command lemshot-move-up () ()
-  (player-move-up *player*))
+  (operate-player 'player-move-up))
 
 (define-command lemshot-move-down () ()
-  (player-move-down *player*))
+  (operate-player 'player-move-down))
 
 (define-command lemshot-move-left () ()
-  (player-move-left *player*))
+  (operate-player 'player-move-left))
 
 (define-command lemshot-move-right () ()
-  (player-move-right *player*))
+  (operate-player 'player-move-right))
 
 (define-command lemshot-shot () ()
-  (player-shot *player*))
+  (operate-player 'player-shot))
 
 (define-key *global-keymap* "Left" 'lemshot-move-left)
 (define-key *global-keymap* "Right" 'lemshot-move-right)
