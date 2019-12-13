@@ -12,7 +12,10 @@
            :sprite-width
            :sprite-height
            :move-sprite
-           :shift-sprite))
+           :shift-sprite
+           :get-sprites
+           :collide-p
+           :delete-all-sprites))
 (in-package :lemshot.sprite)
 
 (defparameter *sprite-counter* 0)
@@ -27,10 +30,10 @@
 (defgeneric draw (sprite point))
 (defmethod draw ((sprite sprite) point))
 
-(defun create-sprite (sprite-class x y w h)
+(defun create-sprite (sprite-class &key x y width height)
   (let* ((sprite-name (format nil "sprite-~D" (incf *sprite-counter*)))
          (buffer (make-buffer sprite-name :temporary t :enable-undo-p nil))
-         (window (make-floating-window buffer x y w h nil))
+         (window (make-floating-window buffer x y width height nil))
          (sprite (make-instance sprite-class :window window)))
     (push sprite *sprites*)
     (let ((point (buffer-point buffer)))
@@ -40,8 +43,9 @@
     sprite))
 
 (defun delete-sprite (sprite)
-  (delete-window (sprite-window sprite))
-  (setf *sprites* (delete sprite *sprites*))
+  (when (alive-sprite-p sprite)
+    (delete-window (sprite-window sprite))
+    (setf *sprites* (delete sprite *sprites*)))
   (values))
 
 (defun sprite-buffer (sprite)
@@ -73,3 +77,17 @@
   (move-sprite sprite
                (+ (sprite-x sprite) dx)
                (+ (sprite-y sprite) dy)))
+
+(defun get-sprites (class-name)
+  (loop :for sprite :in *sprites*
+        :when (typep sprite class-name)
+        :collect sprite))
+
+(defun collide-p (a b)
+  (and (<= (sprite-x a) (+ (sprite-x b) (sprite-width b)))
+       (<= (sprite-x b) (+ (sprite-x a) (sprite-width a)))
+       (<= (sprite-y a) (+ (sprite-y b) (sprite-height b)))
+       (<= (sprite-y b) (+ (sprite-y a) (sprite-height a)))))
+
+(defun delete-all-sprites ()
+  (length (mapc #'delete-sprite *sprites*)))
