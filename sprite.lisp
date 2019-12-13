@@ -2,6 +2,7 @@
   (:use :cl :lem)
   (:export :alive-sprite-p
            :sprite
+           :draw
            :create-sprite
            :delete-sprite
            :sprite-buffer
@@ -23,12 +24,19 @@
     :initarg :window
     :reader sprite-window)))
 
+(defgeneric draw (sprite point))
+(defmethod draw ((sprite sprite) point))
+
 (defun create-sprite (sprite-class x y w h)
   (let* ((sprite-name (format nil "sprite-~D" (incf *sprite-counter*)))
          (buffer (make-buffer sprite-name :temporary t :enable-undo-p nil))
          (window (make-floating-window buffer x y w h nil))
          (sprite (make-instance sprite-class :window window)))
     (push sprite *sprites*)
+    (let ((point (buffer-point buffer)))
+      (buffer-start point)
+      (draw sprite point)
+      (buffer-start point))
     sprite))
 
 (defun delete-sprite (sprite)
