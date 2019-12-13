@@ -36,6 +36,16 @@
 (define-attribute type-a-attribute
   (t :foreground "yellow" :bold-p t))
 
+(defun make-timer-finalizer ()
+  (lambda () (stop-timer *running-timer*)))
+
+(defun create-updator (sprite &optional finalizer)
+  (lambda ()
+    (cond ((alive-sprite-p sprite)
+           (update sprite))
+          (t
+           (funcall finalizer)))))
+
 ;;; player
 (defclass player (sprite) ())
 
@@ -49,10 +59,10 @@
   (let ((x (floor (display-width) 2))
         (y (floor (display-height) 2)))
     (multiple-value-bind (w h) (compute-size-with-ascii-art *player-text*)
-      (let ((sprite (create-sprite 'player :x x :y y :width w :height h)))
-        (rename-sprite sprite "player-sprite")
-        (setf *player* sprite)
-        sprite))))
+      (let ((player (create-sprite 'player :x x :y y :width w :height h)))
+        (rename-sprite player "player-sprite")
+        (setf *player* player)
+        player))))
 
 ;;; shot
 (defclass shot (sprite) ())
@@ -60,21 +70,24 @@
 (defmethod draw ((shot shot) point)
   (insert-string point "__" :attribute 'shot-attribute))
 
-(defun create-shot-updator (shot)
-  (lambda ()
-    (cond ((alive-sprite-p shot)
-           (shift-sprite shot 1 0)
-           (when (<= (display-width) (sprite-x shot))
-             (delete-sprite shot)))
-          (t
-           (stop-timer *running-timer*)))))
+(defmethod update ((shot shot))
+  (shift-sprite shot 1 0)
+  (when (<= (display-width) (sprite-x shot))
+    (delete-sprite shot)))
 
 (defun create-shot-sprite (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
-    (start-timer 5 t (create-shot-updator shot))))
+    (start-timer 5 t (create-updator shot (make-timer-finalizer)))
+    shot))
 
 ;;; enemy
 (defclass enemy (sprite) ())
+
+(defmethod update ((enemy enemy))
+  (dolist (shot (get-sprites 'shot))
+    (when (collide-p enemy shot)
+      (delete-sprite enemy)
+      (delete-sprite shot))))
 
 ;;; typeA
 (defclass type-a (enemy) ())
@@ -82,20 +95,11 @@
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
-(defun create-enemy-updator (enemy)
-  (lambda ()
-    (cond ((alive-sprite-p enemy)
-           (dolist (shot (get-sprites 'shot))
-             (when (collide-p enemy shot)
-               (delete-sprite enemy)
-               (delete-sprite shot))))
-          (t
-           (stop-timer *running-timer*)))))
-
 (defun create-type-a-sprite (x y)
   (multiple-value-bind (w h) (compute-size-with-ascii-art *type-a-text*)
     (let ((type-a (create-sprite 'type-a :x x :y y :width w :height h)))
-      (start-timer 20 t (create-enemy-updator type-a)))))
+      (start-timer 20 t (create-updator type-a (make-timer-finalizer)))
+      type-a)))
 
 ;;;
 (defun player-move-left (player)

@@ -3,6 +3,7 @@
   (:export :alive-sprite-p
            :sprite
            :draw
+           :update
            :create-sprite
            :delete-sprite
            :sprite-buffer
@@ -29,6 +30,9 @@
 
 (defgeneric draw (sprite point))
 (defmethod draw ((sprite sprite) point))
+
+(defgeneric update (sprite))
+(defmethod update ((sprite sprite)))
 
 (defun create-sprite (sprite-class &key x y width height)
   (let* ((sprite-name (format nil "sprite-~D" (incf *sprite-counter*)))
