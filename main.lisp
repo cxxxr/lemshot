@@ -95,17 +95,29 @@
     shot))
 
 ;;; enemy
-(defstruct rule initial-x initial-y action-operations)
+(defstruct rule initial-x initial-y actions)
 
 (defun get-rule (enemy-name)
   (get enemy-name 'action-rule))
+
+(defun collect-plist-values (plist key)
+  (let ((values '()))
+    (loop :with value
+          :while plist
+          :do (setf (values key value plist) (get-properties plist (list key)))
+              (cond (key
+                     (setf plist (cddr plist))
+                     (push value values))
+                    (t
+                     (return))))
+    (nreverse values)))
 
 (defmacro def-rule (enemy-name &body spec)
   `(progn
      (setf (get ',enemy-name 'action-rule)
            (make-rule :initial-x ',(getf spec :initial-x)
                       :initial-y ',(getf spec :initial-y)
-                      :action-operations ',(getf spec :action)))))
+                      :actions ',(collect-plist-values spec :action)))))
 
 (defgeneric compute-enemy-size (enemy-name))
 
@@ -117,8 +129,8 @@
     :accessor enemy-current-operation
     :initform nil)))
 
-(defun create-enemy (name)
-  (multiple-value-bind (width height) (compute-enemy-size 'type-a)
+(defun create-enemy (name &optional (action-index 0))
+  (multiple-value-bind (width height) (compute-enemy-size name)
     (let* ((rule (get-rule name))
            (enemy (create-sprite name
                                  :x (compute-expression (rule-initial-x rule))
@@ -126,7 +138,7 @@
                                  :width width
                                  :height height)))
       (setf (enemy-operation-queue enemy)
-            (lemshot::constructor-rule (rule-action-operations rule)))
+            (constructor-rule (elt (rule-actions rule) action-index)))
       (next-operation enemy)
       enemy)))
 
