@@ -1,6 +1,6 @@
 (defpackage :lemshot/main
   (:nicknames :lemshot)
-  (:use :cl :lem :alexandria :lemshot/sprite :lemshot/operation))
+  (:use :cl :lem :alexandria :lemshot/sprite :lemshot/operation :lemshot/expression))
 (in-package :lemshot/main)
 
 (defvar *player*)
@@ -121,8 +121,8 @@
   (multiple-value-bind (width height) (compute-enemy-size 'type-a)
     (let* ((rule (get-rule name))
            (enemy (create-sprite name
-                                 :x (lemshot/operation::compute-expression (rule-initial-x rule))
-                                 :y (lemshot/operation::compute-expression (rule-initial-y rule))
+                                 :x (compute-expression (rule-initial-x rule))
+                                 :y (compute-expression (rule-initial-y rule))
                                  :width width
                                  :height height)))
       (setf (enemy-operation-queue enemy)

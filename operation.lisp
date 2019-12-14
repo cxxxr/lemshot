@@ -1,11 +1,12 @@
 (defpackage :lemshot/operation
   (:use :cl)
-  (:import-from :lem :display-width :display-height)
-  (:import-from :trivia)
+  (:import-from :lemshot/expression
+                :compute-expression)
   (:export :constructor-rule))
 (in-package :lemshot/operation)
 
-(defparameter +operation-states+ '(:suspended :running :dead))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter +operation-states+ '(:suspended :running :dead)))
 
 (defclass <operation> ()
   ((state
@@ -37,14 +38,6 @@
 (defclass <down> (<operation> <every> <move>)
   ()
   (:default-initargs :dx 0 :dy 1))
-
-(defun compute-expression (expr)
-  (trivia:ematch expr
-    ("width" (display-width))
-    ("height" (display-height))
-    ((list '/ x y)
-     (values (round (compute-expression x) (compute-expression y))))
-    (x x)))
 
 (defun make-operation (expr)
   (ecase (first expr)
