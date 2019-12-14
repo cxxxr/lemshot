@@ -102,8 +102,8 @@
                    :initform nil)))
 
 (defmethod update ((enemy enemy))
-  (when (minusp (sprite-x type-a))
-    (delete-sprite type-a))
+  (when (minusp (sprite-x enemy))
+    (delete-sprite enemy))
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
       (delete-sprite enemy)
