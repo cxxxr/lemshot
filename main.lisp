@@ -62,7 +62,7 @@
       (delete-sprite player)
       (gameover))))
 
-(defun create-player-sprite ()
+(defun create-player ()
   (when (and (boundp '*player*)
              (alive-sprite-p *player*))
     (editor-error "alreay exist player"))
