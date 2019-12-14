@@ -22,6 +22,11 @@
 +--+
 "))
 
+(defparameter *type-b-text* (trim-whitespaces "
+ /----|
+<#====|
+ \----|
+"))
 
 (defvar *player*)
 
@@ -33,6 +38,9 @@
 
 (define-attribute type-a-attribute
   (t :foreground "yellow" :bold-p t))
+
+(define-attribute type-b-attribute
+  (t :foreground "red" :bold-p t))
 
 (defun make-timer-finalizer ()
   (lambda () (stop-timer *running-timer*)))
@@ -167,20 +175,34 @@
 (defmethod compute-enemy-size ((name (eql 'type-a)))
   (compute-text-size *type-a-text*))
 
+;;; typeB
+(defclass type-b (enemy) ())
+
+(defmethod draw ((type-b type-b) point)
+  (insert-string point *type-b-text* :attribute 'type-b-attribute))
+
+(defmethod compute-enemy-size ((name (eql 'type-b)))
+  (compute-text-size *type-b-text*))
+
 ;;; rules
 (def-rule case-1
   :initial-x "width"
   :initial-y (/ "height" 4)
   :action ((:left :distance (/ "width" 7) :every 20)
            (:down :distance (/ "height" 5) :every 20)
-           (:left :distance "width" :every 20)))
+           (:left :distance "far" :every 20)))
 
 (def-rule case-2
   :initial-x "width"
   :initial-y (* "height" 3/4)
   :action ((:left :distance (/ "width" 7) :every 20)
            (:up :distance (/ "height" 5) :every 20)
-           (:left :distance "width" :every 20)))
+           (:left :distance "far" :every 20)))
+
+(def-rule type-b
+  :initial-x "width"
+  :initial-y "random-height"
+  :action ((:left :distance "far" :every 10)))
 
 ;;;
 (defun player-move-left (player)
