@@ -1,6 +1,6 @@
 (defpackage :lemshot/main
   (:nicknames :lemshot)
-  (:use :cl :lem :lemshot/sprite))
+  (:use :cl :lem :alexandria :lemshot/sprite :lemshot/operation))
 (in-package :lemshot/main)
 
 (defvar *player*)
@@ -95,11 +95,43 @@
     shot))
 
 ;;; enemy
+(defun get-rule (enemy-name)
+  (get enemy-name 'action-rule))
+
+(defmacro def-rule (enemy-name &body body)
+  `(progn
+     (setf (get ',enemy-name 'action-rule)
+           (constructor-rule ',body))))
+
 (defclass enemy (sprite)
-  ((action-queue :accessor enemy-action-queue
-                 :initarg :action-queue)
-   (current-action :accessor enemy-current-action
-                   :initform nil)))
+  ((operation-queue :accessor enemy-operation-queue
+                    :initarg :operation-queue)
+   (current-operation :accessor enemy-current-operation
+                      :initform nil)))
+
+(defmethod initialize-instance ((enemy enemy) &key)
+  (let ((enemy (call-next-method)))
+    (setf (enemy-operation-queue enemy)
+          (get-rule (type-of enemy)))
+    enemy))
+
+(defun next-operation (enemy)
+  (when-let ((operation (pop (enemy-operation-queue enemy))))
+    (setf (enemy-current-operation enemy) operation)
+    (lemshot/operation::run-operation operation)
+    (start-timer (lemshot/operation::every-ms operation)
+                 t
+                 (create-updator enemy (make-timer-finalizer)))))
+
+(defgeneric execute-operation (operation enemy)
+  (:method-combination progn))
+
+(defmethod execute-operation progn ((operation lemshot/operation::<move>) enemy)
+  (shift-sprite enemy
+                (lemshot/operation::move-dx operation)
+                (lemshot/operation::move-dy operation))
+  (unless (plusp (decf (lemshot/operation::move-distance operation)))
+    (lemshot/operation::finish-operation operation)))
 
 (defmethod update ((enemy enemy))
   (when (minusp (sprite-x enemy))
@@ -107,28 +139,29 @@
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
       (delete-sprite enemy)
-      (delete-sprite shot))))
+      (delete-sprite shot)))
+  (let ((operation (enemy-current-operation enemy)))
+    (execute-operation operation enemy)
+    (when (lemshot/operation::operation-finished-p operation)
+      (stop-timer *running-timer*)
+      (next-operation enemy))))
 
 ;;; typeA
-(defparameter *type-a-action-rule*
-  '((left 10 :every 20)
-    '(down 3 :every 20)
-    '(left * :every 20)))
+(def-rule type-a
+  (:left :distance 50 :every 20)
+  (:down :distance 20 :every 20)
+  (:left :distance * :every 20))
 
 (defclass type-a (enemy)
-  ()
-  (:default-initargs :action-queue *type-a-action-rule*))
+  ())
 
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
-(defmethod update ((type-a type-a))
-  (call-next-method))
-
 (defun create-type-a-sprite (x y)
   (multiple-value-bind (w h) (compute-size-with-ascii-art *type-a-text*)
     (let ((type-a (create-sprite 'type-a :x x :y y :width w :height h)))
-      (start-timer 10 t (create-updator type-a (make-timer-finalizer)))
+      (next-operation type-a)
       type-a)))
 
 ;;;
