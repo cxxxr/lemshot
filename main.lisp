@@ -205,8 +205,9 @@
                       (+ (sprite-y player) 1)))
 
 (defun operate-player (fn)
-  (funcall fn *player*)
-  (update *player*))
+  (when (alive-sprite-p *player*)
+    (funcall fn *player*)
+    (update *player*)))
 
 ;;;
 (define-command lemshot-move-up () ()
