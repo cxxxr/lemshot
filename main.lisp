@@ -90,14 +90,17 @@
                          :text (gen-explosion-text width height))))
     (start-timer 300 t (create-updator explosion))))
 
+(defun create-object-explosion (object)
+  (create-explosion (sprite-x object)
+                    (sprite-y object)
+                    (sprite-width object)
+                    (sprite-height object)
+                    (object-attribute object)))
+
 (defun explode-enemy (&key enemy shot)
   (delete-sprite enemy)
   (delete-sprite shot)
-  (create-explosion (sprite-x enemy)
-                    (sprite-y enemy)
-                    (sprite-width enemy)
-                    (sprite-height enemy)
-                    (object-attribute enemy)))
+  (create-object-explosion enemy))
 
 ;;; player
 (defclass player (object) ()
@@ -105,11 +108,15 @@
    :text *player-text*
    :attribute 'player-attribute))
 
+(defun explode-player (player)
+  (delete-sprite player)
+  (create-object-explosion player)
+  (gameover))
+
 (defmethod update ((player player))
   (dolist (enemy (get-sprites 'enemy))
     (when (collide-p player enemy)
-      (delete-sprite player)
-      (gameover))))
+      (explode-player player))))
 
 (defun create-player ()
   (when (and (boundp '*player*)
@@ -204,6 +211,9 @@
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
       (explode-enemy :enemy enemy :shot shot)))
+  (dolist (player (get-sprites 'player))
+    (when (collide-p enemy player)
+      (explode-player player)))
   (let ((operation (enemy-current-operation enemy)))
     (execute-operation operation enemy)
     (when (lemshot/operation::operation-finished-p operation)
