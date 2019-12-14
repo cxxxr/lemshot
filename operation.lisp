@@ -1,6 +1,7 @@
 (defpackage :lemshot/operation
   (:use :cl)
-  (:import-from :lem :display-width)
+  (:import-from :lem :display-width :display-height)
+  (:import-from :trivia)
   (:export :constructor-rule))
 (in-package :lemshot/operation)
 
@@ -37,20 +38,25 @@
   ()
   (:default-initargs :dx 0 :dy 1))
 
+(defun compute-argument (expr)
+  (trivia:ematch expr
+    ("width" (display-width))
+    ("height" (display-height))
+    ((list '/ x y)
+     (values (round (compute-argument x) (compute-argument y))))
+    (x x)))
+
 (defun make-operation (expr)
   (ecase (first expr)
     ((:left :right :up :down)
      (destructuring-bind (&key distance ((:every ms)))
          (rest expr)
-       (check-type distance (or integer (eql *)))
        (make-instance (ecase (first expr)
                         (:left '<left>)
                         (:right '<right>)
                         (:up '<up>)
                         (:down '<down>))
-                      :distance (if (eq distance '*)
-                                    (display-width)
-                                    distance)
+                      :distance (compute-argument distance)
                       :ms ms)))))
 
 (defun constructor-rule (rule)

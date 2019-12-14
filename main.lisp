@@ -95,25 +95,40 @@
     shot))
 
 ;;; enemy
+(defstruct rule initial-x initial-y action-operations)
+
 (defun get-rule (enemy-name)
   (get enemy-name 'action-rule))
 
-(defmacro def-rule (enemy-name &body body)
+(defmacro def-rule (enemy-name &body spec)
   `(progn
      (setf (get ',enemy-name 'action-rule)
-           (constructor-rule ',body))))
+           (make-rule :initial-x ',(getf spec :initial-x)
+                      :initial-y ',(getf spec :initial-y)
+                      :action-operations ',(getf spec :action)))))
+
+(defgeneric compute-enemy-size (enemy-name))
 
 (defclass enemy (sprite)
-  ((operation-queue :accessor enemy-operation-queue
-                    :initarg :operation-queue)
-   (current-operation :accessor enemy-current-operation
-                      :initform nil)))
+  ((operation-queue
+    :accessor enemy-operation-queue
+    :initarg :operation-queue)
+   (current-operation
+    :accessor enemy-current-operation
+    :initform nil)))
 
-(defmethod initialize-instance ((enemy enemy) &key)
-  (let ((enemy (call-next-method)))
-    (setf (enemy-operation-queue enemy)
-          (get-rule (type-of enemy)))
-    enemy))
+(defun create-enemy (name)
+  (multiple-value-bind (width height) (compute-enemy-size 'type-a)
+    (let* ((rule (get-rule name))
+           (enemy (create-sprite name
+                                 :x (lemshot/operation::compute-argument (rule-initial-x rule))
+                                 :y (lemshot/operation::compute-argument (rule-initial-y rule))
+                                 :width width
+                                 :height height)))
+      (setf (enemy-operation-queue enemy)
+            (lemshot::constructor-rule (rule-action-operations rule)))
+      (next-operation enemy)
+      enemy)))
 
 (defun next-operation (enemy)
   (when-let ((operation (pop (enemy-operation-queue enemy))))
@@ -148,9 +163,11 @@
 
 ;;; typeA
 (def-rule type-a
-  (:left :distance 50 :every 20)
-  (:down :distance 20 :every 20)
-  (:left :distance * :every 20))
+  :initial-x "width"
+  :initial-y (/ "height" 4)
+  :action ((:left :distance (/ "width" 7) :every 20)
+           (:down :distance (/ "height" 5) :every 20)
+           (:left :distance "width" :every 20)))
 
 (defclass type-a (enemy)
   ())
@@ -158,11 +175,8 @@
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
-(defun create-type-a-sprite (x y)
-  (multiple-value-bind (w h) (compute-size-with-ascii-art *type-a-text*)
-    (let ((type-a (create-sprite 'type-a :x x :y y :width w :height h)))
-      (next-operation type-a)
-      type-a)))
+(defmethod compute-enemy-size ((name (eql 'type-a)))
+  (compute-size-with-ascii-art *type-a-text*))
 
 ;;;
 (defun player-move-left (player)
