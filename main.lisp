@@ -121,8 +121,8 @@
   (multiple-value-bind (width height) (compute-enemy-size 'type-a)
     (let* ((rule (get-rule name))
            (enemy (create-sprite name
-                                 :x (lemshot/operation::compute-argument (rule-initial-x rule))
-                                 :y (lemshot/operation::compute-argument (rule-initial-y rule))
+                                 :x (lemshot/operation::compute-expression (rule-initial-x rule))
+                                 :y (lemshot/operation::compute-expression (rule-initial-y rule))
                                  :width width
                                  :height height)))
       (setf (enemy-operation-queue enemy)

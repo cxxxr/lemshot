@@ -38,12 +38,12 @@
   ()
   (:default-initargs :dx 0 :dy 1))
 
-(defun compute-argument (expr)
+(defun compute-expression (expr)
   (trivia:ematch expr
     ("width" (display-width))
     ("height" (display-height))
     ((list '/ x y)
-     (values (round (compute-argument x) (compute-argument y))))
+     (values (round (compute-expression x) (compute-expression y))))
     (x x)))
 
 (defun make-operation (expr)
@@ -56,7 +56,7 @@
                         (:right '<right>)
                         (:up '<up>)
                         (:down '<down>))
-                      :distance (compute-argument distance)
+                      :distance (compute-expression distance)
                       :ms ms)))))
 
 (defun constructor-rule (rule)
