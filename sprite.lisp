@@ -1,5 +1,7 @@
 (defpackage :lemshot/sprite
   (:use :cl :lem)
+  (:import-from :alexandria
+                :remove-from-plist)
   (:export :alive-sprite-p
            :sprite
            :draw
@@ -34,11 +36,13 @@
 (defgeneric update (sprite))
 (defmethod update ((sprite sprite)))
 
-(defun create-sprite (sprite-class &key x y width height)
+(defun create-sprite (sprite-class &rest initargs &key x y width height &allow-other-keys)
   (let* ((sprite-name (format nil "sprite-~D" (incf *sprite-counter*)))
          (buffer (make-buffer sprite-name :temporary t :enable-undo-p nil))
          (window (make-floating-window buffer x y width height nil))
-         (sprite (make-instance sprite-class :window window)))
+         (sprite (apply #'make-instance sprite-class
+                        :window window
+                        (alexandria:remove-from-plist initargs :x :y :width :height))))
     (push sprite *sprites*)
     (let ((point (buffer-point buffer)))
       (buffer-start point)

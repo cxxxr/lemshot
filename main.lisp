@@ -45,7 +45,7 @@
 (defun make-timer-finalizer ()
   (lambda () (stop-timer *running-timer*)))
 
-(defun create-updator (sprite &optional finalizer)
+(defun create-updator (sprite &optional (finalizer (make-timer-finalizer)))
   (lambda ()
     (cond ((alive-sprite-p sprite)
            (update sprite))
@@ -55,11 +55,55 @@
 (defun gameover ()
   (message "GEME OVER"))
 
-;;; player
-(defclass player (sprite) ())
+(defclass object (sprite)
+  ((text
+    :initarg :text
+    :reader object-text)
+   (attribute
+    :initarg :attribute
+    :reader object-attribute)))
 
-(defmethod draw ((player player) point)
-  (insert-string point *player-text* :attribute 'player-attribute))
+(defmethod draw ((object object) point)
+  (insert-string point (object-text object) :attribute (object-attribute object)))
+
+;;; explosion
+(defclass explosion (object)
+  ())
+
+(defmethod update ((explosion explosion))
+  (delete-sprite explosion))
+
+(defun gen-explosion-text (width height)
+  (trim-whitespaces
+   (with-output-to-string (out)
+     (dotimes (y height)
+       (write-line (make-string (1- width) :initial-element #\@) out)))))
+
+(defun create-explosion (x y width height attribute)
+  (let ((explosion
+          (create-sprite 'explosion
+                         :x x
+                         :y y
+                         :width width
+                         :height height
+                         :attribute attribute
+                         :text (gen-explosion-text width height))))
+    (start-timer 300 t (create-updator explosion))))
+
+(defun explode-enemy (&key enemy shot)
+  (delete-sprite enemy)
+  (delete-sprite shot)
+  (create-explosion (sprite-x enemy)
+                    (sprite-y enemy)
+                    (sprite-width enemy)
+                    (sprite-height enemy)
+                    (object-attribute enemy)))
+
+;;; player
+(defclass player (object) ()
+  (:default-initargs
+   :text *player-text*
+   :attribute 'player-attribute))
 
 (defmethod update ((player player))
   (dolist (enemy (get-sprites 'enemy))
@@ -80,10 +124,10 @@
         player))))
 
 ;;; shot
-(defclass shot (sprite) ())
-
-(defmethod draw ((shot shot) point)
-  (insert-string point "__" :attribute 'shot-attribute))
+(defclass shot (object) ()
+  (:default-initargs
+   :text "__"
+   :attribute 'shot-attribute))
 
 (defmethod update ((shot shot))
   (shift-sprite shot 1 0)
@@ -91,12 +135,11 @@
     (delete-sprite shot))
   (dolist (enemy (get-sprites 'enemy))
     (when (collide-p enemy shot)
-      (delete-sprite enemy)
-      (delete-sprite shot))))
+      (explode-enemy :enemy enemy :shot shot))))
 
 (defun create-shot-sprite (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
-    (start-timer 5 t (create-updator shot (make-timer-finalizer)))
+    (start-timer 5 t (create-updator shot))
     shot))
 
 ;;; enemy
@@ -114,7 +157,7 @@
 
 (defgeneric compute-enemy-size (enemy-name))
 
-(defclass enemy (sprite)
+(defclass enemy (object)
   ((operation-queue
     :accessor enemy-operation-queue
     :initarg :operation-queue)
@@ -125,13 +168,15 @@
 (defun create-enemy (name &key (rule-name name) (action-index 0))
   (multiple-value-bind (width height) (compute-enemy-size name)
     (let* ((rule (get-rule rule-name))
-           (enemy (create-sprite name
-                                 :x (compute-expression (rule-initial-x rule))
-                                 :y (compute-expression (rule-initial-y rule))
-                                 :width width
-                                 :height height)))
-      (setf (enemy-operation-queue enemy)
-            (constructor-rule (elt (rule-actions rule) action-index)))
+           (enemy (create-sprite
+                   name
+                   :x (compute-expression (rule-initial-x rule))
+                   :y (compute-expression (rule-initial-y rule))
+                   :width width
+                   :height height
+                   :operation-queue (constructor-rule
+                                     (elt (rule-actions rule)
+                                          action-index)))))
       (next-operation enemy)
       enemy)))
 
@@ -141,7 +186,7 @@
     (lemshot/operation::run-operation operation)
     (start-timer (lemshot/operation::every-ms operation)
                  t
-                 (create-updator enemy (make-timer-finalizer)))))
+                 (create-updator enemy))))
 
 (defgeneric execute-operation (operation enemy)
   (:method-combination progn))
@@ -158,8 +203,7 @@
     (delete-sprite enemy))
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
-      (delete-sprite enemy)
-      (delete-sprite shot)))
+      (explode-enemy :enemy enemy :shot shot)))
   (let ((operation (enemy-current-operation enemy)))
     (execute-operation operation enemy)
     (when (lemshot/operation::operation-finished-p operation)
@@ -167,19 +211,19 @@
       (next-operation enemy))))
 
 ;;; typeA
-(defclass type-a (enemy) ())
-
-(defmethod draw ((type-a type-a) point)
-  (insert-string point *type-a-text* :attribute 'type-a-attribute))
+(defclass type-a (enemy) ()
+  (:default-initargs
+   :attribute 'type-a-attribute
+   :text *type-a-text*))
 
 (defmethod compute-enemy-size ((name (eql 'type-a)))
   (compute-text-size *type-a-text*))
 
 ;;; typeB
-(defclass type-b (enemy) ())
-
-(defmethod draw ((type-b type-b) point)
-  (insert-string point *type-b-text* :attribute 'type-b-attribute))
+(defclass type-b (enemy) ()
+  (:default-initargs
+   :attribute 'type-b-attribute
+   :text *type-b-text*))
 
 (defmethod compute-enemy-size ((name (eql 'type-b)))
   (compute-text-size *type-b-text*))
