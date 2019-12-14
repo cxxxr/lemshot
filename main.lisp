@@ -185,14 +185,14 @@
   (compute-text-size *type-b-text*))
 
 ;;; rules
-(def-rule case-1
+(def-rule type-a-case-1
   :initial-x "width"
   :initial-y (/ "height" 4)
   :action ((:left :distance (/ "width" 7) :every 20)
            (:down :distance (/ "height" 5) :every 20)
            (:left :distance "far" :every 20)))
 
-(def-rule case-2
+(def-rule type-a-case-2
   :initial-x "width"
   :initial-y (* "height" 3/4)
   :action ((:left :distance (/ "width" 7) :every 20)
