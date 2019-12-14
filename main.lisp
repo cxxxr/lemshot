@@ -97,7 +97,7 @@
                     (sprite-height object)
                     (object-attribute object)))
 
-(defun explode-enemy (&key enemy shot)
+(defun kill-enemy (&key enemy shot)
   (delete-sprite enemy)
   (delete-sprite shot)
   (create-object-explosion enemy))
@@ -108,7 +108,7 @@
    :text *player-text*
    :attribute 'player-attribute))
 
-(defun explode-player (player)
+(defun kill-player (player)
   (delete-sprite player)
   (create-object-explosion player)
   (gameover))
@@ -116,7 +116,7 @@
 (defmethod update ((player player))
   (dolist (enemy (get-sprites 'enemy))
     (when (collide-p player enemy)
-      (explode-player player))))
+      (kill-player player))))
 
 (defun create-player ()
   (when (and (boundp '*player*)
@@ -142,7 +142,7 @@
     (delete-sprite shot))
   (dolist (enemy (get-sprites 'enemy))
     (when (collide-p enemy shot)
-      (explode-enemy :enemy enemy :shot shot))))
+      (kill-enemy :enemy enemy :shot shot))))
 
 (defun create-shot-sprite (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
@@ -210,10 +210,10 @@
     (delete-sprite enemy))
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
-      (explode-enemy :enemy enemy :shot shot)))
+      (kill-enemy :enemy enemy :shot shot)))
   (dolist (player (get-sprites 'player))
     (when (collide-p enemy player)
-      (explode-player player)))
+      (kill-player player)))
   (let ((operation (enemy-current-operation enemy)))
     (execute-operation operation enemy)
     (when (lemshot/operation::operation-finished-p operation)
