@@ -82,7 +82,11 @@
 (defmethod update ((shot shot))
   (shift-sprite shot 1 0)
   (when (<= (display-width) (sprite-x shot))
-    (delete-sprite shot)))
+    (delete-sprite shot))
+  (dolist (enemy (get-sprites 'enemy))
+    (when (collide-p enemy shot)
+      (delete-sprite enemy)
+      (delete-sprite shot))))
 
 (defun create-shot-sprite (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
@@ -104,10 +108,16 @@
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
+(defmethod update ((type-a type-a))
+  (shift-sprite type-a -1 0)
+  (when (minusp (sprite-x type-a))
+    (delete-sprite type-a))
+  (call-next-method))
+
 (defun create-type-a-sprite (x y)
   (multiple-value-bind (w h) (compute-size-with-ascii-art *type-a-text*)
     (let ((type-a (create-sprite 'type-a :x x :y y :width w :height h)))
-      (start-timer 20 t (create-updator type-a (make-timer-finalizer)))
+      (start-timer 200 t (create-updator type-a (make-timer-finalizer)))
       type-a)))
 
 ;;;
