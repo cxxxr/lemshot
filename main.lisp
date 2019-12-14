@@ -1,6 +1,7 @@
-(defpackage :lemshot
-  (:use :cl :lem :lemshot.sprite))
-(in-package :lemshot)
+(defpackage :lemshot/main
+  (:nicknames :lemshot)
+  (:use :cl :lem :lemshot/sprite))
+(in-package :lemshot/main)
 
 (defvar *player*)
 
@@ -94,30 +95,40 @@
     shot))
 
 ;;; enemy
-(defclass enemy (sprite) ())
+(defclass enemy (sprite)
+  ((action-queue :accessor enemy-action-queue
+                 :initarg :action-queue)
+   (current-action :accessor enemy-current-action
+                   :initform nil)))
 
 (defmethod update ((enemy enemy))
+  (when (minusp (sprite-x type-a))
+    (delete-sprite type-a))
   (dolist (shot (get-sprites 'shot))
     (when (collide-p enemy shot)
       (delete-sprite enemy)
       (delete-sprite shot))))
 
 ;;; typeA
-(defclass type-a (enemy) ())
+(defparameter *type-a-action-rule*
+  '((left 10 :every 20)
+    '(down 3 :every 20)
+    '(left * :every 20)))
+
+(defclass type-a (enemy)
+  ()
+  (:default-initargs :action-queue *type-a-action-rule*))
 
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
 (defmethod update ((type-a type-a))
-  (shift-sprite type-a -1 0)
-  (when (minusp (sprite-x type-a))
-    (delete-sprite type-a))
   (call-next-method))
 
 (defun create-type-a-sprite (x y)
   (multiple-value-bind (w h) (compute-size-with-ascii-art *type-a-text*)
     (let ((type-a (create-sprite 'type-a :x x :y y :width w :height h)))
-      (start-timer 200 t (create-updator type-a (make-timer-finalizer)))
+      (start-timer 10 t (create-updator type-a (make-timer-finalizer)))
       type-a)))
 
 ;;;

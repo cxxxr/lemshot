@@ -1,4 +1,4 @@
-(defpackage :lemshot.sprite
+(defpackage :lemshot/sprite
   (:use :cl :lem)
   (:export :alive-sprite-p
            :sprite
@@ -17,7 +17,7 @@
            :get-sprites
            :collide-p
            :delete-all-sprites))
-(in-package :lemshot.sprite)
+(in-package :lemshot/sprite)
 
 (defparameter *sprite-counter* 0)
 

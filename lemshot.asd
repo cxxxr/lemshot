@@ -1,5 +1,3 @@
 (defsystem "lemshot"
-  :depends-on ("lem")
-  :serial t
-  :components ((:file "sprite")
-               (:file "lemshot")))
+  :class :package-inferred-system
+  :depends-on ("lemshot/main"))
