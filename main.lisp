@@ -129,9 +129,9 @@
     :accessor enemy-current-operation
     :initform nil)))
 
-(defun create-enemy (name &optional (action-index 0))
+(defun create-enemy (name &key (rule-name name) (action-index 0))
   (multiple-value-bind (width height) (compute-enemy-size name)
-    (let* ((rule (get-rule name))
+    (let* ((rule (get-rule rule-name))
            (enemy (create-sprite name
                                  :x (compute-expression (rule-initial-x rule))
                                  :y (compute-expression (rule-initial-y rule))
@@ -174,21 +174,28 @@
       (next-operation enemy))))
 
 ;;; typeA
-(def-rule type-a
-  :initial-x "width"
-  :initial-y (/ "height" 4)
-  :action ((:left :distance (/ "width" 7) :every 20)
-           (:down :distance (/ "height" 5) :every 20)
-           (:left :distance "width" :every 20)))
-
-(defclass type-a (enemy)
-  ())
+(defclass type-a (enemy) ())
 
 (defmethod draw ((type-a type-a) point)
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
 (defmethod compute-enemy-size ((name (eql 'type-a)))
   (compute-size-with-ascii-art *type-a-text*))
+
+;;; rules
+(def-rule case-1
+  :initial-x "width"
+  :initial-y (/ "height" 4)
+  :action ((:left :distance (/ "width" 7) :every 20)
+           (:down :distance (/ "height" 5) :every 20)
+           (:left :distance "width" :every 20)))
+
+(def-rule case-2
+  :initial-x "width"
+  :initial-y (* "height" 3/4)
+  :action ((:left :distance (/ "width" 7) :every 20)
+           (:up :distance (/ "height" 5) :every 20)
+           (:left :distance "width" :every 20)))
 
 ;;;
 (defun player-move-left (player)
