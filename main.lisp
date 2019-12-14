@@ -1,32 +1,29 @@
 (defpackage :lemshot/main
   (:nicknames :lemshot)
-  (:use :cl :lem :alexandria :lemshot/sprite :lemshot/operation :lemshot/expression))
+  (:use :cl
+        :lem
+        :alexandria
+        :lemshot/utilities
+        :lemshot/sprite
+        :lemshot/operation
+        :lemshot/expression))
 (in-package :lemshot/main)
 
-(defvar *player*)
-
-(defparameter *player-text* (string-trim '(#\newline #\space) "
+(defparameter *player-text* (trim-whitespaces "
 +-----
 |#####\\
 |#####/
 +-----
 "))
 
-(defparameter *type-a-text* (string-trim '(#\newline #\space) "
+(defparameter *type-a-text* (trim-whitespaces "
 +--+
 |##|
 +--+
 "))
 
-(defun compute-size-with-ascii-art (text)
-  (flet ((compute-width ()
-           (+ 2 (reduce #'max
-                        (uiop:split-string text :separator '(#\newline))
-                        :start 0
-                        :key #'length)))
-         (compute-height ()
-           (+ 1 (count #\newline text))))
-    (values (compute-width) (compute-height))))
+
+(defvar *player*)
 
 (define-attribute player-attribute
   (t :foreground "green" :bold-p t))
@@ -68,7 +65,7 @@
     (editor-error "alreay exist player"))
   (let ((x (floor (display-width) 2))
         (y (floor (display-height) 2)))
-    (multiple-value-bind (w h) (compute-size-with-ascii-art *player-text*)
+    (multiple-value-bind (w h) (compute-text-size *player-text*)
       (let ((player (create-sprite 'player :x x :y y :width w :height h)))
         (rename-sprite player "player-sprite")
         (setf *player* player)
@@ -100,24 +97,12 @@
 (defun get-rule (enemy-name)
   (get enemy-name 'action-rule))
 
-(defun collect-plist-values (plist key)
-  (let ((values '()))
-    (loop :with value
-          :while plist
-          :do (setf (values key value plist) (get-properties plist (list key)))
-              (cond (key
-                     (setf plist (cddr plist))
-                     (push value values))
-                    (t
-                     (return))))
-    (nreverse values)))
-
 (defmacro def-rule (enemy-name &body spec)
   `(progn
      (setf (get ',enemy-name 'action-rule)
            (make-rule :initial-x ',(getf spec :initial-x)
                       :initial-y ',(getf spec :initial-y)
-                      :actions ',(collect-plist-values spec :action)))))
+                      :actions ',(get-plist-values spec :action)))))
 
 (defgeneric compute-enemy-size (enemy-name))
 
@@ -180,7 +165,7 @@
   (insert-string point *type-a-text* :attribute 'type-a-attribute))
 
 (defmethod compute-enemy-size ((name (eql 'type-a)))
-  (compute-size-with-ascii-art *type-a-text*))
+  (compute-text-size *type-a-text*))
 
 ;;; rules
 (def-rule case-1
