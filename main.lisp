@@ -9,38 +9,7 @@
         :lemshot/expression))
 (in-package :lemshot/main)
 
-(defparameter *player-text*
-  (lines
-   "+-----"
-   "|#####\\"
-   "|#####/"
-   "+-----"))
-
-(defparameter *type-a-text*
-  (lines
-   "+--+"
-   "|##|"
-   "+--+"))
-
-(defparameter *type-b-text*
-  (lines
-   " /----|"
-   "<#====|"
-   " \\----|"))
-
 (defvar *player*)
-
-(define-attribute player-attribute
-  (t :foreground "green" :bold-p t))
-
-(define-attribute shot-attribute
-  (t :foreground "red" :bold-p t))
-
-(define-attribute type-a-attribute
-  (t :foreground "yellow" :bold-p t))
-
-(define-attribute type-b-attribute
-  (t :foreground "orange" :bold-p t))
 
 (defun make-timer-finalizer ()
   (lambda () (stop-timer *running-timer*)))
@@ -55,6 +24,7 @@
 (defun gameover ()
   (message "GEME OVER"))
 
+;;; object
 (defclass object (sprite)
   ((text
     :initarg :text
@@ -103,6 +73,16 @@
   (create-object-explosion enemy))
 
 ;;; player
+(defparameter *player-text*
+  (lines
+   "+-----"
+   "|#####\\"
+   "|#####/"
+   "+-----"))
+
+(define-attribute player-attribute
+  (t :foreground "green" :bold-p t))
+
 (defclass player (object) ()
   (:default-initargs
    :text *player-text*
@@ -131,6 +111,9 @@
         player))))
 
 ;;; shot
+(define-attribute shot-attribute
+  (t :foreground "red" :bold-p t))
+
 (defclass shot (object) ()
   (:default-initargs
    :text "__"
@@ -221,6 +204,15 @@
       (next-operation enemy))))
 
 ;;; typeA
+(defparameter *type-a-text*
+  (lines
+   "+--+"
+   "|##|"
+   "+--+"))
+
+(define-attribute type-a-attribute
+  (t :foreground "yellow" :bold-p t))
+
 (defclass type-a (enemy) ()
   (:default-initargs
    :attribute 'type-a-attribute
@@ -229,16 +221,6 @@
 (defmethod compute-enemy-size ((name (eql 'type-a)))
   (compute-text-size *type-a-text*))
 
-;;; typeB
-(defclass type-b (enemy) ()
-  (:default-initargs
-   :attribute 'type-b-attribute
-   :text *type-b-text*))
-
-(defmethod compute-enemy-size ((name (eql 'type-b)))
-  (compute-text-size *type-b-text*))
-
-;;; rules
 (def-rule type-a-case-1
   :initial-x "width"
   :initial-y (/ "height" 4)
@@ -253,10 +235,51 @@
            (:up :distance (/ "height" 5) :every 20)
            (:left :distance "far" :every 20)))
 
+;;; typeB
+(defparameter *type-b-text*
+  (lines
+   " /----|"
+   "<#====|"
+   " \\----|"))
+
+(define-attribute type-b-attribute
+  (t :foreground "orange" :bold-p t))
+
+(defclass type-b (enemy) ()
+  (:default-initargs
+   :attribute 'type-b-attribute
+   :text *type-b-text*))
+
+(defmethod compute-enemy-size ((name (eql 'type-b)))
+  (compute-text-size *type-b-text*))
+
 (def-rule type-b
   :initial-x "width"
   :initial-y "random-height"
   :action ((:left :distance "far" :every 10)))
+
+;;; typeC
+(defparameter *type-c-text*
+  (lines
+   " ___"
+   "////\\"
+   "\\___/"))
+
+(define-attribute type-c-attribute
+  (t :foreground "cyan" :bold-p t))
+
+(defclass type-c (enemy) ()
+  (:default-initargs
+   :attribute 'type-c-attribute
+   :text *type-c-text*))
+
+(defmethod compute-enemy-size ((name (eql 'type-c)))
+  (compute-text-size *type-b-text*))
+
+(def-rule type-c
+  :initial-x "width"
+  :initial-y "random-height"
+  :action ((:left :distance "far" :every 30)))
 
 ;;;
 (defun player-move-left (player)
@@ -309,7 +332,7 @@
 (define-key *global-keymap* "Right" 'lemshot-move-right)
 (define-key *global-keymap* "Up" 'lemshot-move-up)
 (define-key *global-keymap* "Down" 'lemshot-move-down)
-(define-key *global-keymap* "PageDown" 'lemshot-shot)
+(define-key *global-keymap* "Escape" 'lemshot-shot)
 
 (define-command lemshot () ()
   )
