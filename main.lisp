@@ -21,6 +21,10 @@
           (t
            (funcall finalizer)))))
 
+(defun timer-error-handler (condition)
+  (pop-up-backtrace condition)
+  (stop-timer *running-timer*))
+
 (defun gameover ()
   (message "GEME OVER"))
 
@@ -58,7 +62,7 @@
                          :height height
                          :attribute attribute
                          :text (gen-explosion-text width height))))
-    (start-timer 300 t (create-updator explosion))))
+    (start-timer 300 t (create-updator explosion) 'timer-error-handler)))
 
 (defun create-object-explosion (object)
   (create-explosion (sprite-x object)
@@ -129,7 +133,7 @@
 
 (defun create-shot-sprite (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
-    (start-timer 5 t (create-updator shot))
+    (start-timer 5 t (create-updator shot) 'timer-error-handler)
     shot))
 
 ;;; enemy
@@ -172,20 +176,32 @@
 
 (defun next-operation (enemy)
   (when-let ((operation (pop (enemy-operation-queue enemy))))
+    ;; (format $ "next-operation: ~A~%" operation)
     (setf (enemy-current-operation enemy) operation)
     (lemshot/operation::run-operation operation)
-    (start-timer (lemshot/operation::every-ms operation)
+    (start-timer (lemshot/operation::get-delay-time operation)
                  t
-                 (create-updator enemy))))
+                 (create-updator enemy)
+                 'timer-error-handler)))
 
-(defgeneric execute-operation (operation enemy)
-  (:method-combination progn))
+(defgeneric execute-operation (operation enemy))
 
-(defmethod execute-operation progn ((operation lemshot/operation::<move>) enemy)
+(defmethod execute-operation ((operation lemshot/operation::<move>) enemy)
   (shift-sprite enemy
                 (lemshot/operation::move-dx operation)
                 (lemshot/operation::move-dy operation))
   (unless (plusp (decf (lemshot/operation::move-distance operation)))
+    (lemshot/operation::finish-operation operation)))
+
+(defmethod execute-operation ((operation lemshot/operation::<beem>) enemy)
+  )
+
+(defmethod execute-operation ((operation lemshot/operation::<loop>) enemy)
+  (let ((body (lemshot/operation::loop-body operation)))
+    (setf (enemy-operation-queue enemy)
+          (nconc (mapcar #'lemshot/operation::remake-operation body)
+                 (cons (lemshot/operation::remake-operation operation)
+                       (enemy-operation-queue enemy))))
     (lemshot/operation::finish-operation operation)))
 
 (defmethod update ((enemy enemy))
@@ -198,6 +214,7 @@
     (when (collide-p enemy player)
       (kill-player player)))
   (let ((operation (enemy-current-operation enemy)))
+    ;; (format $ "update: ~A~%" operation)
     (execute-operation operation enemy)
     (when (lemshot/operation::operation-finished-p operation)
       (stop-timer *running-timer*)
@@ -266,7 +283,7 @@
    "\\___/"))
 
 (define-attribute type-c-attribute
-  (t :foreground "cyan" :bold-p t))
+  (t :foreground "orange" :bold-p t))
 
 (defclass type-c (enemy) ()
   (:default-initargs
@@ -279,7 +296,9 @@
 (def-rule type-c
   :initial-x "width"
   :initial-y "random-height"
-  :action ((:left :distance "far" :every 30)))
+  :action ((:loop
+             (:left :distance (/ "width" 10) :every 30)
+             (:beem 1))))
 
 ;;;
 (defun player-move-left (player)
