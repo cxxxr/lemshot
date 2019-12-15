@@ -2,7 +2,8 @@
   (:use :cl)
   (:export :trim-whitespaces
            :get-plist-values
-           :compute-text-size))
+           :compute-text-size
+           :lines))
 (in-package :lemshot/utilities)
 
 (defun trim-whitespaces (string)
@@ -29,3 +30,8 @@
          (compute-height ()
            (+ 1 (count #\newline text))))
     (values (compute-width) (compute-height))))
+
+(defun lines (&rest strings)
+  (with-output-to-string (out)
+    (dolist (string strings)
+      (write-line string out))))

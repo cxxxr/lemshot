@@ -9,24 +9,24 @@
         :lemshot/expression))
 (in-package :lemshot/main)
 
-(defparameter *player-text* (trim-whitespaces "
-+-----
-|#####\\
-|#####/
-+-----
-"))
+(defparameter *player-text*
+  (lines
+   "+-----"
+   "|#####\\"
+   "|#####/"
+   "+-----"))
 
-(defparameter *type-a-text* (trim-whitespaces "
-+--+
-|##|
-+--+
-"))
+(defparameter *type-a-text*
+  (lines
+   "+--+"
+   "|##|"
+   "+--+"))
 
-(defparameter *type-b-text* (trim-whitespaces "
- /----|
-<#====|
- \----|
-"))
+(defparameter *type-b-text*
+  (lines
+   " /----|"
+   "<#====|"
+   " \\----|"))
 
 (defvar *player*)
 
