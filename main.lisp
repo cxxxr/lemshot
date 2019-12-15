@@ -131,7 +131,7 @@
     (when (collide-p enemy shot)
       (kill-enemy :enemy enemy :shot shot))))
 
-(defun create-shot-sprite (x y)
+(defun create-shot (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
     (start-timer 5 t (create-updator shot) 'timer-error-handler)
     shot))
@@ -322,7 +322,7 @@
     (redraw-display*)))
 
 (defun player-shot (player)
-  (create-shot-sprite (+ (sprite-x player)
+  (create-shot (+ (sprite-x player)
                          (sprite-width player))
                       (+ (sprite-y player) 1)))
 
