@@ -18,6 +18,7 @@
            :shift-sprite
            :get-sprites
            :collide-p
+           :inside-display-p
            :delete-all-sprites))
 (in-package :lemshot/sprite)
 
@@ -96,6 +97,10 @@
        (<= (sprite-x b) (+ (sprite-x a) (sprite-width a)))
        (<= (sprite-y a) (+ (sprite-y b) (sprite-height b)))
        (<= (sprite-y b) (+ (sprite-y a) (sprite-height a)))))
+
+(defun inside-display-p (sprite)
+  (and (<= 0 (sprite-x sprite) (1- (display-width)))
+       (<= 0 (sprite-y sprite) (1- (display-height)))))
 
 (defun delete-all-sprites ()
   (length (mapc #'delete-sprite *sprites*)))

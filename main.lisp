@@ -136,6 +136,60 @@
     (start-timer 5 t (create-updator shot) 'timer-error-handler)
     shot))
 
+;;; beem
+(define-attribute beem-attribute
+  (t :bold-p t))
+
+(defclass beem (object)
+  ((vx
+    :initarg :vx
+    :reader beem-vx)
+   (vy
+    :initarg :vy
+    :reader beem-vy)
+   (logical-x
+    :initarg :logical-x
+    :accessor beem-logical-x)
+   (logical-y
+    :initarg :logical-y
+    :accessor beem-logical-y))
+  (:default-initargs
+   :text "*"
+   :attribute 'beem-attribute))
+
+(defmethod update ((beem beem))
+  (incf (beem-logical-x beem) (beem-vx beem))
+  (incf (beem-logical-y beem) (beem-vy beem))
+  (move-sprite beem
+               (round (beem-logical-x beem))
+               (round (beem-logical-y beem)))
+  (unless (inside-display-p beem)
+    (delete-sprite beem))
+  (dolist (player (get-sprites 'player))
+    (when (collide-p beem player)
+      (kill-player player))))
+
+(defun create-beem (x y)
+  (let* ((target-x (sprite-x *player*))
+         (target-y (sprite-y *player*))
+         (vx (if (< x target-x) 1 -1))
+         (vy (if (zerop (- target-x x))
+                 (if (< y target-y) 1 -1)
+                 (* (abs (/ (- target-y y)
+                            (- target-x x)))
+                    (if (< y target-y) 1 -1)))))
+    (let ((beem (create-sprite 'beem
+                               :x x
+                               :y y
+                               :width 2
+                               :height 1
+                               :vx vx
+                               :vy vy
+                               :logical-x x
+                               :logical-y y)))
+      (start-timer 20 t (create-updator beem) 'timer-error-handler)
+      beem)))
+
 ;;; enemy
 (defstruct rule initial-x initial-y actions)
 
@@ -159,6 +213,12 @@
     :accessor enemy-current-operation
     :initform nil)))
 
+(defun detect-action (rule action-index)
+  (elt (rule-actions rule)
+       (case action-index
+         (:random (random (length (rule-actions rule))))
+         (otherwise action-index))))
+
 (defun create-enemy (name &key (rule-name name) (action-index 0))
   (multiple-value-bind (width height) (compute-enemy-size name)
     (let* ((rule (get-rule rule-name))
@@ -169,8 +229,7 @@
                    :width width
                    :height height
                    :operation-queue (constructor-rule
-                                     (elt (rule-actions rule)
-                                          action-index)))))
+                                     (detect-action rule action-index)))))
       (next-operation enemy)
       enemy)))
 
@@ -184,19 +243,22 @@
                  (create-updator enemy)
                  'timer-error-handler)))
 
-(defgeneric execute-operation (operation enemy))
+(defgeneric execute-operation (operation enemy)
+  (:method-combination progn))
 
-(defmethod execute-operation ((operation lemshot/operation::<move>) enemy)
-  (shift-sprite enemy
-                (lemshot/operation::move-dx operation)
-                (lemshot/operation::move-dy operation))
-  (unless (plusp (decf (lemshot/operation::move-distance operation)))
+(defmethod execute-operation progn ((operation lemshot/operation::<repeat>) enemy)
+  (unless (plusp (decf (lemshot/operation::repeat-times operation)))
     (lemshot/operation::finish-operation operation)))
 
-(defmethod execute-operation ((operation lemshot/operation::<beem>) enemy)
-  )
+(defmethod execute-operation progn ((operation lemshot/operation::<move>) enemy)
+  (shift-sprite enemy
+                (lemshot/operation::move-dx operation)
+                (lemshot/operation::move-dy operation)))
 
-(defmethod execute-operation ((operation lemshot/operation::<loop>) enemy)
+(defmethod execute-operation progn ((operation lemshot/operation::<beem>) enemy)
+  (create-beem (sprite-x enemy) (sprite-y enemy)))
+
+(defmethod execute-operation progn ((operation lemshot/operation::<loop>) enemy)
   (let ((body (lemshot/operation::loop-body operation)))
     (setf (enemy-operation-queue enemy)
           (nconc (mapcar #'lemshot/operation::remake-operation body)
@@ -298,7 +360,10 @@
   :initial-y "random-height"
   :action ((:loop
              (:left :distance (/ "width" 10) :every 30)
-             (:beem 1))))
+             (:beem)))
+  :action ((:loop
+             (:left :distance (/ "width" 10) :every 30)
+             (:beem :repeat 5 :every 100))))
 
 ;;;
 (defun player-move-left (player)
