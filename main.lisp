@@ -25,9 +25,6 @@
   (pop-up-backtrace condition)
   (stop-timer *running-timer*))
 
-(defun gameover ()
-  (message "GEME OVER"))
-
 ;;; object
 (defclass object (sprite)
   ((text
@@ -428,7 +425,7 @@
   (lines
    "                                    "
    "                                    "
-   "      Escape   shot                 "
+   "      Space   shot                 "
    "      Left    Move player left      "
    "      Right   Move player right     "
    "       Up     Move player up        "
@@ -490,6 +487,14 @@
     (update *player*)))
 
 ;;;
+(defparameter *mode* nil)
+
+(define-command lemshot-start () ()
+  (delete-all-sprites)
+  (create-player)
+  (bt:make-thread 'start-scenario)
+  (setq *mode* :main))
+
 (define-command lemshot-move-up () ()
   (operate-player 'player-move-up))
 
@@ -502,14 +507,48 @@
 (define-command lemshot-move-right () ()
   (operate-player 'player-move-right))
 
-(define-command lemshot-shot () ()
-  (operate-player 'player-shot))
+(define-command lemshot-space (arg) ("p")
+  (case *mode*
+    (:title (lemshot-start))
+    (:main (operate-player 'player-shot))
+    (otherwise (self-insert arg))))
+
+(defun gameover ()
+  (start-timer 1000
+               nil
+               (lambda ()
+                 (setq *mode* nil)
+                 )))
 
 (define-key *global-keymap* "Left" 'lemshot-move-left)
 (define-key *global-keymap* "Right" 'lemshot-move-right)
 (define-key *global-keymap* "Up" 'lemshot-move-up)
 (define-key *global-keymap* "Down" 'lemshot-move-down)
-(define-key *global-keymap* "Escape" 'lemshot-shot)
+(define-key *global-keymap* "Space" 'lemshot-space)
+
+(defun start-scenario ()
+  (loop :repeat 5 :do (send-event (lambda ()
+                                    (create-enemy 'type-a :rule-name 'type-a-case-1)))
+                      (sleep 0.2))
+  (sleep 1)
+  (loop :repeat 5 :do (send-event (lambda ()
+                                    (create-enemy 'type-a :rule-name 'type-a-case-1)))
+                      (sleep 0.2))
+
+  (sleep 2)
+
+  (loop :repeat 5 :do (send-event (lambda ()
+                                    (create-enemy 'type-a :rule-name 'type-a-case-2)))
+                      (sleep 0.2))
+  (sleep 1)
+  (loop :repeat 5 :do (send-event (lambda ()
+                                    (create-enemy 'type-a :rule-name 'type-a-case-2)))
+                      (sleep 0.2))
+  (sleep 2)
+  (loop :repeat 20 :do (send-event (lambda () (create-enemy 'type-b)))
+                       (sleep 0.3)))
 
 (define-command lemshot () ()
-  )
+  (setq *mode* :title)
+  (delete-all-sprites)
+  (create-title))
