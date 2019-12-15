@@ -40,7 +40,7 @@
   (t :foreground "yellow" :bold-p t))
 
 (define-attribute type-b-attribute
-  (t :foreground "red" :bold-p t))
+  (t :foreground "orange" :bold-p t))
 
 (defun make-timer-finalizer ()
   (lambda () (stop-timer *running-timer*)))
