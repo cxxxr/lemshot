@@ -365,6 +365,99 @@
              (:left :distance (/ "width" 10) :every 30)
              (:beem :repeat 5 :every 100))))
 
+;;; title
+(defparameter *title-text-lines*
+  (list
+   "                                                                "
+   "     #       ######  #    #   ####   #    #   ####    #####     "
+   "     #       #       ##  ##  #       #    #  #    #     #       "
+   "     #       #####   # ## #   ####   ######  #    #     #       "
+   "     #       #       #    #       #  #    #  #    #     #       "
+   "     #       #       #    #  #    #  #    #  #    #     #       "
+   "     ######  ######  #    #   ####   #    #   ####      #       "
+   "                                                                "))
+
+(define-attribute title-character-attribute
+  (t :reverse-p t :foreground "white"))
+
+(define-attribute title-space-attribute
+  (t :reverse-p t :foreground "red"))
+
+(defclass title (sprite)
+  ((fix-position
+    :initarg :fix-position
+    :reader title-fix-position)))
+
+(defmethod draw ((title title) point)
+  (dolist (string *title-text-lines*)
+    (loop :for start := 0 :then (1+ pos)
+          :for pos := (position #\# string :start start)
+          :while pos
+          :do (insert-string point (make-string (- pos start) :initial-element #\space)
+                             :attribute 'title-space-attribute)
+              (insert-string point " " :attribute 'title-character-attribute)
+          :finally (insert-string point (make-string (1+ (- (length string) start))
+                                                     :initial-element #\space)
+                                  :attribute 'title-space-attribute))
+    (insert-character point #\newline)))
+
+(defmethod update ((title title))
+  (shift-sprite title 1 0)
+  (when (>= (sprite-x title)
+            (title-fix-position title))
+    (stop-timer *running-timer*)
+    (create-menu)))
+
+(defun create-title ()
+  (multiple-value-bind (w h) (compute-text-size (apply #'lines *title-text-lines*))
+    (let* ((x 0)
+           (y (compute-expression `(/ "height" 4)))
+           (title (create-sprite 'title
+                                 :x x
+                                 :y y
+                                 :width w
+                                 :height h
+                                 :fix-position (compute-expression
+                                                `(- (/ "width" 2)
+                                                    (/ ,w 2))))))
+      (start-timer 15 t (create-updator title) 'timer-error-hanlder)
+      title)))
+
+;;; menu
+(defparameter *menu-text*
+  (lines
+   "                                    "
+   "                                    "
+   "      Escape   shot                 "
+   "      Left    Move player left      "
+   "      Right   Move player right     "
+   "       Up     Move player up        "
+   "      Down    Move player down      "
+   "                                    "
+   "                                    "
+   "        Press Space to start        "
+   "                                    "
+   "                                    "))
+
+(define-attribute menu-attribute
+  (t :reverse-p t :foreground "blue" :background "white"))
+
+(defclass menu (sprite)
+  ())
+
+(defmethod draw ((menu menu) point)
+  (insert-string point *menu-text* :attribute 'menu-attribute))
+
+(defun create-menu ()
+  (multiple-value-bind (w h) (compute-text-size *menu-text*)
+    (let ((menu
+            (create-sprite 'menu
+                           :x (compute-expression `(- (/ "width" 2) (/ ,w 2)))
+                           :y (compute-expression `(- (/ "height" 2) (/ ,h 2)))
+                           :width w
+                           :height h)))
+      menu)))
+
 ;;;
 (defun player-move-left (player)
   (when (alive-sprite-p player)
