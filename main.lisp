@@ -425,7 +425,7 @@
   (lines
    "                                    "
    "                                    "
-   "      Space   shot                 "
+   "      Space   shot                  "
    "      Left    Move player left      "
    "      Right   Move player right     "
    "       Up     Move player up        "
