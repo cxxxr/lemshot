@@ -3,7 +3,8 @@
   (:export :trim-whitespaces
            :get-plist-values
            :compute-text-size
-           :lines))
+           :lines
+           :random-case))
 (in-package :lemshot/utilities)
 
 (defun trim-whitespaces (string)
@@ -35,3 +36,9 @@
   (with-output-to-string (out)
     (dolist (string strings)
       (write-line string out))))
+
+(defmacro random-case (&body forms)
+  `(case (random ,(length forms))
+     ,@(loop :for i :from 0
+             :for form :in forms
+             :collect `(,i ,form))))
