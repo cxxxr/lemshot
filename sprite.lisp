@@ -87,10 +87,12 @@
                (+ (sprite-x sprite) dx)
                (+ (sprite-y sprite) dy)))
 
-(defun get-sprites (class-name)
-  (loop :for sprite :in *sprites*
-        :when (typep sprite class-name)
-        :collect sprite))
+(defun get-sprites (&optional (class-name nil class-name-p))
+  (if (not class-name-p)
+      *sprites*
+      (loop :for sprite :in *sprites*
+            :when (typep sprite class-name)
+            :collect sprite)))
 
 (defun collide-p (a b)
   (and (<= (sprite-x a) (+ (sprite-x b) (sprite-width b)))
