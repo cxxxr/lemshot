@@ -229,7 +229,6 @@
 
 (defun next-operation (enemy)
   (when-let ((operation (pop (enemy-operation-queue enemy))))
-    ;; (format $ "next-operation: ~A~%" operation)
     (setf (enemy-current-operation enemy) operation)
     (run-operation operation)
     (start-timer (get-delay-time operation)
@@ -270,7 +269,6 @@
     (when (collide-p enemy player)
       (kill-player player)))
   (let ((operation (enemy-current-operation enemy)))
-    ;; (format $ "update: ~A~%" operation)
     (execute-operation operation enemy)
     (when (operation-finished-p operation)
       (stop-timer *running-timer*)
