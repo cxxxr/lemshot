@@ -1,7 +1,6 @@
 (defpackage :lemshot/expression
   (:use :cl)
   (:import-from :lem :display-width :display-height)
-  (:import-from :trivia)
   (:export :compute-expression))
 (in-package :lemshot/expression)
 

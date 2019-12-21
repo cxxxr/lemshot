@@ -491,7 +491,7 @@
 
 (defvar *event-queue* (lem::make-event-queue))
 
-(define-global-mode lemshot-mode emacs-mode
+(define-global-mode lemshot-mode (emacs-mode)
   (:keymap *lemshot-keymap*))
 
 (define-command lemshot-start () ()
