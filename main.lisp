@@ -355,7 +355,7 @@
              (:beem)))
   :action ((:loop
              (:left :distance (/ "width" 10) :every 30)
-             (:beem :repeat 5 :every 100))))
+             (:beem :repeat 10 :every 100))))
 
 ;;; title
 (defparameter *title-text-lines*
@@ -560,16 +560,17 @@
                  (create 'type-a :rule-name 'type-a-case-2)))
              (type-b ()
                (sleep 2)
-               (do-repeat 20 (:per-second 0.3)
+               (do-repeat 5 (:per-second 0.3)
                  (create 'type-b)))
              (type-c ()
                (sleep 2)
-               (do-repeat 2 (:per-second 5)
+               (do-repeat 5 (:per-second 3)
                  (create 'type-c :action-index :random))))
-      (sleep 2)
       (type-a-case-1)
       (type-a-case-2)
       (loop
+        (type-b)
+        (type-c)
         (random-case
           (type-b)
           (type-c)
