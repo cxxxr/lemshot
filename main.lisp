@@ -234,8 +234,8 @@
   (when-let ((operation (pop (enemy-operation-queue enemy))))
     ;; (format $ "next-operation: ~A~%" operation)
     (setf (enemy-current-operation enemy) operation)
-    (lemshot/operation::run-operation operation)
-    (start-timer (lemshot/operation::get-delay-time operation)
+    (run-operation operation)
+    (start-timer (get-delay-time operation)
                  t
                  (create-updator enemy)
                  'timer-error-handler)))
@@ -243,25 +243,25 @@
 (defgeneric execute-operation (operation enemy)
   (:method-combination progn))
 
-(defmethod execute-operation progn ((operation lemshot/operation::<repeat>) enemy)
-  (unless (plusp (decf (lemshot/operation::repeat-times operation)))
-    (lemshot/operation::finish-operation operation)))
+(defmethod execute-operation progn ((operation <repeat>) enemy)
+  (unless (plusp (decf (repeat-times operation)))
+    (finish-operation operation)))
 
-(defmethod execute-operation progn ((operation lemshot/operation::<move>) enemy)
+(defmethod execute-operation progn ((operation <move>) enemy)
   (shift-sprite enemy
-                (lemshot/operation::move-dx operation)
-                (lemshot/operation::move-dy operation)))
+                (move-dx operation)
+                (move-dy operation)))
 
-(defmethod execute-operation progn ((operation lemshot/operation::<beem>) enemy)
+(defmethod execute-operation progn ((operation <beem>) enemy)
   (create-beem (sprite-x enemy) (sprite-y enemy)))
 
-(defmethod execute-operation progn ((operation lemshot/operation::<loop>) enemy)
-  (let ((body (lemshot/operation::loop-body operation)))
+(defmethod execute-operation progn ((operation <loop>) enemy)
+  (let ((body (loop-body operation)))
     (setf (enemy-operation-queue enemy)
-          (nconc (mapcar #'lemshot/operation::remake-operation body)
-                 (cons (lemshot/operation::remake-operation operation)
+          (nconc (mapcar #'remake-operation body)
+                 (cons (remake-operation operation)
                        (enemy-operation-queue enemy))))
-    (lemshot/operation::finish-operation operation)))
+    (finish-operation operation)))
 
 (defmethod update ((enemy enemy))
   (when (minusp (sprite-x enemy))
@@ -275,7 +275,7 @@
   (let ((operation (enemy-current-operation enemy)))
     ;; (format $ "update: ~A~%" operation)
     (execute-operation operation enemy)
-    (when (lemshot/operation::operation-finished-p operation)
+    (when (operation-finished-p operation)
       (stop-timer *running-timer*)
       (next-operation enemy))))
 

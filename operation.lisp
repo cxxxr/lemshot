@@ -5,7 +5,26 @@
   (:import-from :alexandria
                 :make-keyword)
   (:import-from :closer-mop)
-  (:export :constructor-rule))
+  (:export :<operation>
+           :<every>
+           :<repeat>
+           :repeat-times
+           :<move>
+           :move-dx
+           :move-dy
+           :<left>
+           :<right>
+           :<up>
+           :<down>
+           :<beem>
+           :<loop>
+           :remake-operation
+           :make-operation
+           :constructor-rule
+           :run-operation
+           :finish-operation
+           :operation-finished-p
+           :get-delay-time))
 (in-package :lemshot/operation)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
