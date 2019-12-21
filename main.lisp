@@ -11,15 +11,12 @@
 
 (defvar *player*)
 
-(defun make-timer-finalizer ()
-  (lambda () (stop-timer *running-timer*)))
-
-(defun create-updator (sprite &optional (finalizer (make-timer-finalizer)))
+(defun create-timer-updator (sprite)
   (lambda ()
     (cond ((alive-sprite-p sprite)
            (update sprite))
           (t
-           (funcall finalizer)))))
+           (stop-timer *running-timer*)))))
 
 (defun timer-error-handler (condition)
   (pop-up-backtrace condition)
@@ -59,7 +56,7 @@
                          :height height
                          :attribute attribute
                          :text (gen-explosion-text width height))))
-    (start-timer 300 t (create-updator explosion) 'timer-error-handler)))
+    (start-timer 300 t (create-timer-updator explosion) 'timer-error-handler)))
 
 (defun create-object-explosion (object)
   (create-explosion (sprite-x object)
@@ -130,7 +127,7 @@
 
 (defun create-shot (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
-    (start-timer 5 t (create-updator shot) 'timer-error-handler)
+    (start-timer 5 t (create-timer-updator shot) 'timer-error-handler)
     shot))
 
 ;;; beem
@@ -184,7 +181,7 @@
                                :vy vy
                                :logical-x x
                                :logical-y y)))
-      (start-timer 20 t (create-updator beem) 'timer-error-handler)
+      (start-timer 20 t (create-timer-updator beem) 'timer-error-handler)
       beem)))
 
 ;;; enemy
@@ -237,7 +234,7 @@
     (run-operation operation)
     (start-timer (get-delay-time operation)
                  t
-                 (create-updator enemy)
+                 (create-timer-updator enemy)
                  'timer-error-handler)))
 
 (defgeneric execute-operation (operation enemy)
@@ -417,7 +414,7 @@
                                  :fix-position (compute-expression
                                                 `(- (/ "width" 2)
                                                     (/ ,w 2))))))
-      (start-timer 15 t (create-updator title) 'timer-error-hanlder)
+      (start-timer 15 t (create-timer-updator title) 'timer-error-hanlder)
       title)))
 
 ;;; menu
