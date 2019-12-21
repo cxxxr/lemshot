@@ -1,7 +1,8 @@
 (defpackage :lemshot/expression
   (:use :cl)
   (:import-from :lem :display-width :display-height)
-  (:export :compute-expression))
+  (:export :register-variable
+           :compute-expression))
 (in-package :lemshot/expression)
 
 (defvar *variables* (make-hash-table :test 'equal))
