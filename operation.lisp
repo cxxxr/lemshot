@@ -18,6 +18,7 @@
            :<down>
            :<beem>
            :<loop>
+           :loop-body
            :remake-operation
            :make-operation
            :constructor-rule
