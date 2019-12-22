@@ -492,7 +492,7 @@
 (define-command lemshot-start () ()
   (delete-all-sprites)
   (create-player)
-  (bt:make-thread 'start-scenario :name "lemshot-enemy-creator-thread")
+  (start-scenario)
   (setq *mode* :main)
   (send-event t *event-queue*))
 
@@ -523,7 +523,8 @@
   (start-timer 3000
                nil
                (lambda ()
-                 (lemshot-quit))))
+                 (lemshot-quit)
+                 (message "Game Over"))))
 
 (define-key *lemshot-keymap* "Left" 'lemshot-move-left)
 (define-key *lemshot-keymap* "Right" 'lemshot-move-right)
@@ -532,50 +533,73 @@
 (define-key *lemshot-keymap* "Space" 'lemshot-space)
 (define-key *lemshot-keymap* "q" 'lemshot-quit)
 
-(defmacro with-scenario (() &body body)
-  (with-unique-names (gf g-out-block-name garg gn g-per-second g-repeat-body g-args)
-    `(block ,g-out-block-name
-       (flet ((,gf (,garg)
-                (unless (eq *mode* :main)
-                  (return-from ,g-out-block-name))
-                (send-event ,garg)))
-         (macrolet ((do-repeat (,gn (&key ((:per-second ,g-per-second) 0)) &body ,g-repeat-body)
-                        `(loop :repeat ,,gn
+(defun run-reservation-timers (reservation-timers)
+  (mapc #'funcall (reverse reservation-timers)))
+
+(defvar *scenario-reservation-timers* '())
+(defvar *scenario-current-ms* 0)
+
+(defun reserve-scenario-timer (fn)
+  (push (let ((ms *scenario-current-ms*))
+          (lambda ()
+            (start-timer ms nil fn)))
+        *scenario-reservation-timers*))
+
+(defmacro with-scenario ((&key loop) &body body)
+  (once-only (loop)
+    (with-unique-names (g-repeat g-per-second g-repeat-body g-create-args)
+      `(let ((*scenario-current-ms* 0)
+             (*scenario-reservation-timers* '()))
+         (flet ((pause (second)
+                  (incf *scenario-current-ms* (* second 1000))))
+           (macrolet ((do-repeat (,g-repeat (&key ((:per-second ,g-per-second) 0)) &body ,g-repeat-body)
+                        `(loop :repeat ,,g-repeat
                                :do (progn ,@,g-repeat-body)
-                                   (sleep ,,g-per-second)))
-                    (create (&rest ,g-args)
-                      `(,',gf (lambda () (create-enemy ,@,g-args)))))
-           ,@body)))))
+                                   (pause ,,g-per-second)))
+                      (create (&rest ,g-create-args)
+                        `(reserve-scenario-timer
+                          (lambda ()
+                            (if (eq *mode* :main)
+                                (create-enemy ,@,g-create-args)
+                                (stop-timer *running-timer*))))))
+             ,@body))
+         (run-reservation-timers *scenario-reservation-timers*)
+         (when ,loop
+           (start-timer *scenario-current-ms*
+                        t
+                        (let ((timers *scenario-reservation-timers*))
+                          (lambda ()
+                            (if (eq *mode* :main)
+                                (run-reservation-timers timers)
+                                (stop-timer *running-timer*))))))))))
 
 (defun start-scenario ()
-  (lem::dequeue-event nil *event-queue*)
-  (with-scenario ()
+  (with-scenario (:loop t)
     (labels ((type-a-case-1 ()
-               (sleep 2)
+               (pause 2)
                (do-repeat 5 (:per-second 0.2)
                  (create 'type-a :rule-name 'type-a-case-1)))
              (type-a-case-2 ()
-               (sleep 2)
+               (pause 2)
                (do-repeat 5 (:per-second 0.2)
                  (create 'type-a :rule-name 'type-a-case-2)))
              (type-b ()
-               (sleep 2)
+               (pause 2)
                (do-repeat 5 (:per-second 0.3)
                  (create 'type-b)))
              (type-c ()
-               (sleep 2)
+               (pause 2)
                (do-repeat 5 (:per-second 3)
                  (create 'type-c :action-index :random))))
       (type-a-case-1)
       (type-a-case-2)
-      (loop
+      (type-b)
+      (type-c)
+      (random-case
         (type-b)
         (type-c)
-        (random-case
-          (type-b)
-          (type-c)
-          (type-a-case-1)
-          (type-a-case-2))))))
+        (type-a-case-1)
+        (type-a-case-2)))))
 
 (define-command lemshot () ()
   (lemshot-mode)
