@@ -516,6 +516,7 @@
 
 (define-command lemshot-quit () ()
   (delete-all-sprites)
+  (delete-all-scenario-timers)
   (setq *mode* nil)
   (emacs-mode))
 
@@ -538,11 +539,17 @@
 
 (defvar *scenario-reservation-timers* '())
 (defvar *scenario-current-ms* 0)
+(defvar *created-timers* '())
+
+(defun delete-all-scenario-timers ()
+  (dolist (timer *created-timers*)
+    (stop-timer timer))
+  (setq *created-timers* '()))
 
 (defun reserve-scenario-timer (fn)
   (push (let ((ms *scenario-current-ms*))
           (lambda ()
-            (start-timer ms nil fn)))
+            (push (start-timer ms nil fn) *created-timers*)))
         *scenario-reservation-timers*))
 
 (defmacro with-scenario ((&key loop) &body body)
@@ -565,13 +572,14 @@
              ,@body))
          (run-reservation-timers *scenario-reservation-timers*)
          (when ,loop
-           (start-timer *scenario-current-ms*
-                        t
-                        (let ((timers *scenario-reservation-timers*))
-                          (lambda ()
-                            (if (eq *mode* :main)
-                                (run-reservation-timers timers)
-                                (stop-timer *running-timer*))))))))))
+           (push (start-timer *scenario-current-ms*
+                              t
+                              (let ((timers *scenario-reservation-timers*))
+                                (lambda ()
+                                  (if (eq *mode* :main)
+                                      (run-reservation-timers timers)
+                                      (stop-timer *running-timer*)))))
+                 *created-timers*))))))
 
 (defun start-scenario ()
   (with-scenario (:loop t)
