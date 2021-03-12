@@ -453,23 +453,19 @@
 ;;;
 (defun player-move-left (player)
   (when (alive-sprite-p player)
-    (shift-sprite player -1 0)
-    (redraw-display*)))
+    (shift-sprite player -1 0)))
 
 (defun player-move-right (player)
   (when (alive-sprite-p player)
-    (shift-sprite player 1 0)
-    (redraw-display*)))
+    (shift-sprite player 1 0)))
 
 (defun player-move-up (player)
   (when (alive-sprite-p player)
-    (shift-sprite player 0 -1)
-    (redraw-display*)))
+    (shift-sprite player 0 -1)))
 
 (defun player-move-down (player)
   (when (alive-sprite-p player)
-    (shift-sprite player 0 1)
-    (redraw-display*)))
+    (shift-sprite player 0 1)))
 
 (defun player-shot (player)
   (create-shot (+ (sprite-x player)
