@@ -16,11 +16,11 @@
     (cond ((alive-sprite-p sprite)
            (update sprite))
           (t
-           (stop-timer *running-timer*)))))
+           (stop-timer (lem::running-timer))))))
 
 (defun timer-error-handler (condition)
   (pop-up-backtrace condition)
-  (stop-timer *running-timer*))
+  (stop-timer (lem::running-timer)))
 
 ;;; object
 (defclass object (sprite)
@@ -56,7 +56,10 @@
                          :height height
                          :attribute attribute
                          :text (gen-explosion-text width height))))
-    (start-timer 300 t (create-timer-updator explosion) 'timer-error-handler)))
+    (start-timer (make-timer (create-timer-updator explosion)
+                             :handle-function 'timer-error-handler)
+                 300
+                 t)))
 
 (defun create-object-explosion (object)
   (create-explosion (sprite-x object)
@@ -79,7 +82,7 @@
    "+-----"))
 
 (define-attribute player-attribute
-  (t :foreground "green" :bold-p t))
+  (t :foreground "green" :bold t))
 
 (defclass player (object) ()
   (:default-initargs
@@ -110,7 +113,7 @@
 
 ;;; shot
 (define-attribute shot-attribute
-  (t :foreground "red" :bold-p t))
+  (t :foreground "red" :bold t))
 
 (defclass shot (object) ()
   (:default-initargs
@@ -127,12 +130,14 @@
 
 (defun create-shot (x y)
   (let ((shot (create-sprite 'shot :x x :y y :width 3 :height 1)))
-    (start-timer 5 t (create-timer-updator shot) 'timer-error-handler)
+    (start-timer (make-timer (create-timer-updator shot) :handle-function 'timer-error-handler)
+                 5
+                 t)
     shot))
 
 ;;; beem
 (define-attribute beem-attribute
-  (t :bold-p t))
+  (t :bold t))
 
 (defclass beem (object)
   ((vx
@@ -181,7 +186,9 @@
                                :vy vy
                                :logical-x x
                                :logical-y y)))
-      (start-timer 20 t (create-timer-updator beem) 'timer-error-handler)
+      (start-timer (make-timer (create-timer-updator beem) :handle-function 'timer-error-handler)
+                   20
+                   t)
       beem)))
 
 ;;; enemy
@@ -231,10 +238,10 @@
   (when-let ((operation (pop (enemy-operation-queue enemy))))
     (setf (enemy-current-operation enemy) operation)
     (run-operation operation)
-    (start-timer (get-delay-time operation)
-                 t
-                 (create-timer-updator enemy)
-                 'timer-error-handler)))
+    (start-timer (make-timer (create-timer-updator enemy)
+                             :handle-function 'timer-error-handler)
+                 (get-delay-time operation)
+                 t)))
 
 (defgeneric execute-operation (operation enemy)
   (:method-combination progn))
@@ -271,7 +278,7 @@
   (let ((operation (enemy-current-operation enemy)))
     (execute-operation operation enemy)
     (when (operation-finished-p operation)
-      (stop-timer *running-timer*)
+      (stop-timer (lem::running-timer))
       (next-operation enemy))))
 
 ;;; typeA
@@ -282,7 +289,7 @@
    "+--+"))
 
 (define-attribute type-a-attribute
-  (t :foreground "yellow" :bold-p t))
+  (t :foreground "yellow" :bold t))
 
 (defclass type-a (enemy) ()
   (:default-initargs
@@ -314,7 +321,7 @@
    " \\----|"))
 
 (define-attribute type-b-attribute
-  (t :foreground "orange" :bold-p t))
+  (t :foreground "orange" :bold t))
 
 (defclass type-b (enemy) ()
   (:default-initargs
@@ -337,7 +344,7 @@
    "\\___/"))
 
 (define-attribute type-c-attribute
-  (t :foreground "orange" :bold-p t))
+  (t :foreground "orange" :bold t))
 
 (defclass type-c (enemy) ()
   (:default-initargs
@@ -370,10 +377,10 @@
    "                                                                "))
 
 (define-attribute title-character-attribute
-  (t :reverse-p t :foreground "white"))
+  (t :reverse t :foreground "white"))
 
 (define-attribute title-space-attribute
-  (t :reverse-p t :foreground "red"))
+  (t :reverse t :foreground "red"))
 
 (defclass title (sprite)
   ((fix-position
@@ -397,7 +404,7 @@
   (shift-sprite title 1 0)
   (when (>= (sprite-x title)
             (title-fix-position title))
-    (stop-timer *running-timer*)
+    (stop-timer (lem::running-timer))
     (create-menu)))
 
 (defun create-title ()
@@ -412,7 +419,9 @@
                                  :fix-position (compute-expression
                                                 `(- (/ "width" 2)
                                                     (/ ,w 2))))))
-      (start-timer 15 t (create-timer-updator title) 'timer-error-hanlder)
+      (start-timer (make-timer (create-timer-updator title) :handle-function 'timer-error-handler)
+                   15
+                   t)
       title)))
 
 ;;; menu
@@ -432,7 +441,7 @@
    "                                    "))
 
 (define-attribute menu-attribute
-  (t :reverse-p t :foreground "blue" :background "white"))
+  (t :reverse t :foreground "blue" :background "white"))
 
 (defclass menu (sprite)
   ())
@@ -482,7 +491,7 @@
 
 (defvar *event-queue* (lem::make-event-queue))
 
-(define-global-mode lemshot-mode (emacs-mode)
+(define-global-mode lemshot-mode (lem::emacs-mode)
   (:keymap *lemshot-keymap*))
 
 (define-command lemshot-start () ()
@@ -514,14 +523,13 @@
   (delete-all-sprites)
   (delete-all-scenario-timers)
   (setq *mode* nil)
-  (emacs-mode))
+  (lem::emacs-mode))
 
 (defun gameover ()
-  (start-timer 3000
-               nil
-               (lambda ()
-                 (lemshot-quit)
-                 (message "Game Over"))))
+  (start-timer (make-timer (lambda ()
+                             (lemshot-quit)
+                             (message "Game Over")))
+               3000 nil))
 
 (define-key *lemshot-keymap* "Left" 'lemshot-move-left)
 (define-key *lemshot-keymap* "Right" 'lemshot-move-right)
@@ -545,7 +553,8 @@
 (defun reserve-scenario-timer (fn)
   (push (let ((ms *scenario-current-ms*))
           (lambda ()
-            (push (start-timer ms nil fn) *created-timers*)))
+            (push (start-timer (make-timer fn) ms)
+                  *created-timers*)))
         *scenario-reservation-timers*))
 
 (defmacro with-scenario ((&key loop) &body body)
@@ -564,17 +573,17 @@
                           (lambda ()
                             (if (eq *mode* :main)
                                 (create-enemy ,@,g-create-args)
-                                (stop-timer *running-timer*))))))
+                                (stop-timer (lem::running-timer)))))))
              ,@body))
          (run-reservation-timers *scenario-reservation-timers*)
          (when ,loop
-           (push (start-timer *scenario-current-ms*
-                              t
-                              (let ((timers *scenario-reservation-timers*))
-                                (lambda ()
-                                  (if (eq *mode* :main)
-                                      (run-reservation-timers timers)
-                                      (stop-timer *running-timer*)))))
+           (push (start-timer (make-timer (let ((timers *scenario-reservation-timers*))
+                                            (lambda ()
+                                              (if (eq *mode* :main)
+                                                  (run-reservation-timers timers)
+                                                  (stop-timer (lem::running-timer))))))
+                              *scenario-current-ms*
+                              t)
                  *created-timers*))))))
 
 (defun start-scenario ()
