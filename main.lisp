@@ -16,11 +16,11 @@
     (cond ((alive-sprite-p sprite)
            (update sprite))
           (t
-           (stop-timer (lem::running-timer))))))
+           (stop-timer (lem/common/timer:running-timer))))))
 
 (defun timer-error-handler (condition)
   (pop-up-backtrace condition)
-  (stop-timer (lem::running-timer)))
+  (stop-timer (lem/common/timer:running-timer)))
 
 ;;; object
 (defclass object (sprite)
@@ -278,7 +278,7 @@
   (let ((operation (enemy-current-operation enemy)))
     (execute-operation operation enemy)
     (when (operation-finished-p operation)
-      (stop-timer (lem::running-timer))
+      (stop-timer (lem/common/timer:running-timer))
       (next-operation enemy))))
 
 ;;; typeA
@@ -404,7 +404,7 @@
   (shift-sprite title 1 0)
   (when (>= (sprite-x title)
             (title-fix-position title))
-    (stop-timer (lem::running-timer))
+    (stop-timer (lem/common/timer:running-timer))
     (create-menu)))
 
 (defun create-title ()
@@ -489,9 +489,9 @@
 ;;;
 (defparameter *mode* nil)
 
-(defvar *event-queue* (lem::make-event-queue))
+(defvar *event-queue* (lem-core::make-event-queue))
 
-(define-global-mode lemshot-mode (lem::emacs-mode)
+(define-global-mode lemshot-mode (lem-core::emacs-mode)
   (:keymap *lemshot-keymap*))
 
 (define-command lemshot-start () ()
@@ -523,7 +523,7 @@
   (delete-all-sprites)
   (delete-all-scenario-timers)
   (setq *mode* nil)
-  (lem::emacs-mode))
+  (lem-core::emacs-mode))
 
 (defun gameover ()
   (start-timer (make-timer (lambda ()
@@ -573,7 +573,7 @@
                           (lambda ()
                             (if (eq *mode* :main)
                                 (create-enemy ,@,g-create-args)
-                                (stop-timer (lem::running-timer)))))))
+                                (stop-timer (lem/common/timer:running-timer)))))))
              ,@body))
          (run-reservation-timers *scenario-reservation-timers*)
          (when ,loop
@@ -581,7 +581,7 @@
                                             (lambda ()
                                               (if (eq *mode* :main)
                                                   (run-reservation-timers timers)
-                                                  (stop-timer (lem::running-timer))))))
+                                                  (stop-timer (lem/common/timer:running-timer))))))
                               *scenario-current-ms*
                               t)
                  *created-timers*))))))
